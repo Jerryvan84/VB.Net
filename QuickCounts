@@ -1,0 +1,485 @@
+Public Class Form1
+    'Public NetDSS_NTP_file_link As String = "http://sasportal.cablevision.com:8080/static-content/NYMAWIDE_NODES_TO_PORT.csv"
+
+    Public dirPath As String = Environment.GetEnvironmentVariable("APPDATA") & "\"
+    Public NetDSS_NTP_file_link As String = "\\10.5.69.6\systems\NOC_Operations\JRosado\N_T_P\Node_To_Port.csv"
+    Public cmts_address As String
+    Public nocctrLogin As String = "nocctr{ENTER}1n2d33p1{ENTER}" 'enable{ENTER}1n2d33p1{ENTER}"
+
+    Private Sub Button2_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button2.Click
+        Dim node As String
+
+        If PrepPutty() = "NOTREADY" Or PrepPutty() = "UNKNOWN" Then Exit Sub
+
+        node = UCase(Trim(TextBox1.Text))
+        TextBox1.Text = node
+        If node = "" Then Exit Sub
+
+        cmts_address = Ubr_Cdnt_Cer_CMTS_Lookup(node) 'Here's the function that will return the cmts address of the node
+
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cdn" Then
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable modem summary | include Offline| " & node & "{ENTER}")
+            Exit Sub
+        End If
+
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cer" Then  'Command for CER cmts
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable modem summary port | include Offline| " & node & "{ENTER}")
+            Exit Sub
+        End If
+
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "ubr" Then
+
+        End If
+
+        If cmts_address = "ERROR" Then
+            MessageBox.Show("No CMTS address found for the given entry", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        Dim cardRangeInfo = UbrCardRange(node)
+        'MsgBox(cardRangeInfo)
+
+        If cardRangeInfo = "ERROR" Then
+            MessageBox.Show("No card-range data found", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        Call PuttyExecute(nocctrLogin, cmts_address, "show cable modem summary " & cardRangeInfo & " total{ENTER}")
+    End Sub
+    Private Sub Button3_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button3.Click
+        Dim node As String
+        Dim cardInfo As String
+
+        If PrepPutty() = "NOTREADY" Or PrepPutty() = "UNKNOWN" Then Exit Sub
+
+        node = UCase(Trim(TextBox1.Text))
+        TextBox1.Text = node
+        If node = "" Then Exit Sub
+
+        cmts_address = Ubr_Cdnt_Cer_CMTS_Lookup(node)
+
+        If cmts_address = "ERROR" Then
+            MessageBox.Show("No Ubr nor CDNT address found for the given entry", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        Dim cadentUpstreams
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cdn" Then
+            cadentUpstreams = Split(CdntCardRange(node), "/")
+            'MsgBox(cadentUpstreams(0) & cadentUpstreams(1) & cadentUpstreams(2))
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable noise cable-upstream " & cadentUpstreams(0) & "/" & cadentUpstreams(1) & "{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable noise cable-upstream " & cadentUpstreams(2) & "/" & cadentUpstreams(3) & "{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable noise cable-upstream " & cadentUpstreams(4) & "/" & cadentUpstreams(5) & "{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show cable noise cable-upstream " & cadentUpstreams(0) & "{ENTER}")
+            Exit Sub
+        End If
+
+        Dim cardRangeInfo = UbrCardRange(node)
+        'MsgBox(cardRangeInfo)
+
+        If cardRangeInfo = "ERROR" Then
+            MessageBox.Show("No card-range data found", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        cardInfo = Mid(cardRangeInfo, 7, 5)
+
+        'Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardRangeInfo & " | include SNR{ENTER}")
+        If Microsoft.VisualBasic.Right(cardRangeInfo, 3) = "0 3" Then
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 0 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 0 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 0 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 1 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 1 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 1 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 2 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 2 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 2 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 3 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 3 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 3 | include SNR{ENTER}{ENTER}")
+        ElseIf Microsoft.VisualBasic.Right(cardRangeInfo, 3) = "4 7" Then
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 4 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 4 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 4 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 5 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 5 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 5 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 6 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 6 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 6 | include SNR{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 7 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 7 | include SNR{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardInfo & " upstream 7 | include SNR{ENTER}{ENTER}")
+        End If
+    End Sub
+    Private Sub Button4_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button4.Click
+        Dim node As String
+        Dim cardInfo As String
+
+        If PrepPutty() = "NOTREADY" Or PrepPutty() = "UNKNOWN" Then Exit Sub
+
+        node = UCase(Trim(TextBox1.Text))
+        TextBox1.Text = node
+        If node = "" Then Exit Sub
+
+        cmts_address = Ubr_Cdnt_Cer_CMTS_Lookup(node)
+
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cdn" Then
+            MessageBox.Show("Command is not available on CDNT(s)", "Unable to proceed", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            'MsgBox(CdntCardRange(node))
+            Exit Sub
+        End If
+
+        If cmts_address = "ERROR" Then
+            MessageBox.Show("No Ubr nor CDNT address found for the given entry", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        Dim cardRangeInfo = UbrCardRange(node)
+        'MsgBox(cardRangeInfo)
+
+        If cardRangeInfo = "ERROR" Then
+            MessageBox.Show("No card-range data found", "Not found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+
+        cardInfo = Mid(cardRangeInfo, 7, 5)
+
+        'Call PuttyExecute(nocctrLogin, cmts_address, "show controllers cable " & cardRangeInfo & " | include SNR{ENTER}")
+        If Microsoft.VisualBasic.Right(cardRangeInfo, 3) = "0 3" Then
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 0 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 0 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 0 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 1 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 1 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 1 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 2 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 2 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 2 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 3 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 3 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 3 | include Code{ENTER}{ENTER}")
+        ElseIf Microsoft.VisualBasic.Right(cardRangeInfo, 3) = "4 7" Then
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 4 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 4 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 4 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 5 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 5 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 5 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 6 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 6 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 6 | include Code{ENTER}{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 7 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 7 | include Code{ENTER}")
+            Call PuttyExecute(nocctrLogin, cmts_address, "show interface cable " & cardInfo & " upstream 7 | include Code{ENTER}{ENTER}")
+        End If
+    End Sub
+    Function PrepPutty()
+        PrepPutty = "UNKNOWN"
+
+        If (My.Computer.FileSystem.FileExists("c:\putty.exe")) And Not (My.Computer.FileSystem.FileExists(dirPath & "putty.exe")) Then
+            System.IO.File.Copy("c:\putty.exe", dirPath & "putty.exe")
+            PrepPutty = "NOTREADY"
+        End If
+
+        If Not (My.Computer.FileSystem.FileExists(dirPath & "putty.exe")) Then
+            MsgBox("""putty.exe"" has not been detected in neither C:\ nor " & dirPath, 48)
+            PrepPutty = "NOTREADY"
+        End If
+
+        If (My.Computer.FileSystem.FileExists(dirPath & "putty.exe")) Then
+            PrepPutty = "READY"
+        End If
+    End Function
+    Sub PuttyExecute(ByVal login, ByVal cmtsStr, ByVal sendKeysStr)
+        On Error Resume Next
+        AppActivate(cmts_address & " - PuTTY")
+
+        'MsgBox("Description: " & Err.Description, , "Error: " & Err.Number)
+        If Err.Number = 5 Or cmtsStr <> cmts_address Then  'Error = 5 is no windows was found, 0 is it does show
+            Shell(dirPath & "putty.exe -telnet " & cmtsStr, AppWinStyle.NormalFocus)
+            AppActivate(cmtsStr & " - PuTTY")
+            System.Threading.Thread.Sleep(600)
+
+            On Error Resume Next
+            AppActivate(cmts_address & " - PuTTY")
+            If Err.Number = 5 Then
+                Exit Sub
+            End If
+
+            SendKeys.Send(login & sendKeysStr)
+            'MessageBox.Show(login & sendKeysStr)
+
+        ElseIf Err.Number = 0 Then
+            AppActivate(cmtsStr & " - PuTTY")
+            System.Threading.Thread.Sleep(600)
+            SendKeys.Send(sendKeysStr)
+            'MessageBox.Show(sendKeysStr)
+        End If
+    End Sub
+    Private Sub ReloadUBRDataToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ReloadUBRDataToolStripMenuItem.Click
+        Dim ntpFile As String
+        ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+        My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+    End Sub
+    Private Sub DeletePreviousDataFilesToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles DeletePreviousDataFilesToolStripMenuItem.Click
+        Dim deleted As Boolean = False
+        Dim directory As New System.IO.DirectoryInfo(dirPath)           'Make a reference to a directory
+        Dim fileList As System.IO.FileInfo() = directory.GetFiles()     'Get a reference to each file in that directory
+        Dim file As System.IO.FileInfo                                  'Display the names of the files
+
+        For Each file In fileList
+            If Microsoft.VisualBasic.Left(file.Name, 12) = "Node_To_Port" Then
+                deleted = True
+                file.Delete()
+            End If
+        Next file
+
+        If deleted = True Then
+            MessageBox.Show("All Node-to-Port data files have now been deleted", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Else
+            MessageBox.Show("There are no Node-to-Port data files to delete", "No data file found", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+        End If
+    End Sub
+    Private Sub ViewNodeDataDetailsToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ViewNodeDataDetailsToolStripMenuItem.Click
+        If TextBox1.Text = "" Then
+            MessageBox.Show("Enter a node in the textbox first", "Missing Node", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            Exit Sub
+        Else
+            Dim node = UCase(Trim(TextBox1.Text))
+            TextBox1.Text = node
+            If node = "" Then Exit Sub
+
+            Dim ntpFile As String
+            ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+
+            If Not (My.Computer.FileSystem.FileExists(ntpFile)) Then
+                My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+            End If
+
+            Dim ntp As New IO.StreamReader(ntpFile)
+            Dim linein As String
+            Dim Result As Integer
+            Dim sum As String = ""
+
+            linein = ntp.ReadLine
+            Do Until linein Is Nothing
+                Result = InStr(linein, node)
+                If Result <> 0 Then
+                    If sum <> "" Then sum = linein & vbNewLine & sum
+                    If sum = "" Then sum = linein
+                End If
+                linein = ntp.ReadLine()
+            Loop
+            ntp.Close()
+
+            If sum = "" Then
+                MessageBox.Show("Node data for the entry provided", "Error...", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                Exit Sub
+            Else
+                MessageBox.Show(sum, "Data file Output")
+            End If
+        End If
+    End Sub
+    Private Sub ConnectToUbrToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ConnectToUbrToolStripMenuItem.Click
+        Dim cmtsStr As String
+
+        If PrepPutty() = "NOTREADY" Or PrepPutty() = "UNKNOWN" Then Exit Sub
+
+        cmtsStr = Trim(TextBox1.Text)
+        TextBox1.Text = cmtsStr
+        If cmtsStr = "" Then Exit Sub
+
+        cmts_address = cmtsStr
+
+        If LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cdn" Or LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "ubr" Or LCase(Microsoft.VisualBasic.Left(cmts_address, 3)) = "cer" Then
+            If LCase(Microsoft.VisualBasic.Right(cmts_address, 7)) <> ".cv.net" Then
+                cmts_address = cmts_address & ".cv.net"
+                TextBox1.Text = cmts_address
+            End If
+            If LCase(Microsoft.VisualBasic.Right(cmts_address, 7)) = ".cv.net" Then
+                Call PuttyExecute(nocctrLogin, cmts_address, "")
+                Exit Sub
+            End If
+        End If
+    End Sub
+    Private Sub AboutToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles AboutToolStripMenuItem.Click
+        MessageBox.Show("Created by: Jerryvan Rosado" & vbNewLine & "Date: November 22, 2014" & vbNewLine & "Contact: jrosado1@Cablevision.com" & vbNewLine & "Alt Email: JerryvanRosado@Gmail.com", "About", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
+    Function Ubr_Cdnt_Cer_CMTS_Lookup(ByVal node)
+        Dim ntpFile As String
+        ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+
+        If Not (My.Computer.FileSystem.FileExists(ntpFile)) Then
+            My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+        End If
+
+        Dim ntp As New IO.StreamReader(ntpFile)
+        Dim linein As String
+        Dim Result As Integer
+
+        linein = ntp.ReadLine
+        Do Until linein Is Nothing
+            Result = InStr(linein, node)
+            If Result <> 0 Then
+                Dim n As Short
+                n = 1
+                For i As Short = 0 To 2                          'Looking for the 5th ","
+                    n = InStr(n, linein, ",") + 1
+                Next
+
+                linein = Microsoft.VisualBasic.Right(linein, Len(linein) - InStr(n, linein, ","))   'Chop up the left of the string off
+                linein = Microsoft.VisualBasic.Left(linein, InStr(linein, ",") - 1)                     'Chop up the right of the string off
+                Exit Do
+            End If
+            linein = ntp.ReadLine()
+        Loop
+        ntp.Close()
+
+        If Result = 0 Then
+            Ubr_Cdnt_Cer_CMTS_Lookup = "ERROR"
+        Else
+            Ubr_Cdnt_Cer_CMTS_Lookup = linein & ".cv.net"
+        End If
+    End Function
+    'Function Ubr_Cdnt_Cer_CMTS_Lookup(ByVal node)
+    '    Dim ntpFile As String
+    '    ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+
+    '    If Not (My.Computer.FileSystem.FileExists(ntpFile)) Then
+    '        My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+    '    End If
+
+    '    Dim oExcel As Object = CreateObject("Excel.Application")
+    '    Dim oBook As Object = oExcel.Workbooks.Open(ntpFile)
+    '    Dim oSheet As Object = oBook.Worksheets(1)
+    '    Dim cellValue As String
+
+    '    cellValue = "NOT_FOUND"
+    '    Dim cellrow As Integer = 3
+
+    '    'While oSheet.Range("B" & cellrow).Value <> "" 'The B column has the list of the nodes
+    '    '    'MsgBox(oSheet.Range("B" & cellrow).Value)
+    '    '    If InStr(oSheet.Range("B" & cellrow).Value, node, CompareMethod.Text) <> 0 Then
+    '    '        MsgBox("Node found in " & "B" & cellrow)
+    '    '        Exit While
+    '    '    End If
+
+    '    '    cellrow = cellrow + 1
+    '    'End While
+
+    '    oSheet = Nothing
+    '    oBook = Nothing
+    '    oExcel.Quit()
+    '    oExcel = Nothing
+    '    GC.Collect()
+
+    '    'MsgBox(cellValue)
+    '    Return ("ERROR")
+    'End Function
+    Function CdntCardRange(ByVal node)
+        Dim ntpFile As String
+        Dim exitCount As Short = 0
+        Dim cdnt_upstreams As String = ""
+
+        ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+
+        If Not (My.Computer.FileSystem.FileExists(ntpFile)) Then
+            My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+        End If
+
+        Dim ntp As New IO.StreamReader(ntpFile)
+        Dim linein As String
+        Dim Result As Integer
+        Dim cardDelArray
+
+        linein = ntp.ReadLine
+        Do Until linein Is Nothing
+            Result = InStr(linein, node)
+            If Result <> 0 Then
+                Dim n As Short
+                n = 1
+                For i As Short = 0 To 1                          'Looking for the 5th ","
+                    n = InStr(n, linein, ",") + 1
+                Next
+
+                linein = Microsoft.VisualBasic.Right(linein, Len(linein) - InStr(n, linein, ","))   'Chop up the left of the string off
+                linein = Microsoft.VisualBasic.Left(linein, InStr(linein, ",") - 1)                     'Chop up the right of the string off
+
+                cardDelArray = Split(linein, " ")
+                If cdnt_upstreams = "" Then
+                    cdnt_upstreams = cardDelArray(2) & "/" & Microsoft.VisualBasic.Right(cardDelArray(3), Len(cardDelArray(3)) - 1)
+                Else
+                    cdnt_upstreams = cdnt_upstreams & "/" & cardDelArray(2) & "/" & Microsoft.VisualBasic.Right(cardDelArray(3), Len(cardDelArray(3)) - 1)
+                End If
+
+                exitCount = exitCount + 1
+                If exitCount = 3 Then Exit Do
+            End If
+            linein = ntp.ReadLine()
+        Loop
+        ntp.Close()
+
+        CdntCardRange = cdnt_upstreams
+        'Dim cardDelArray = Split(linein, "/")
+        'CdntCardRange = cardDelArray(2) & "/" & Microsoft.VisualBasic.Right(cardDelArray(3), Len(cardDelArray(3)) - 1)
+        'CdntCardRange = cardDelArray(2) & "/" & cardDelArray(0)
+    End Function 'NO LONGER USED
+    Function UbrCardRange(ByVal node)
+        'Used the same snipper from the Ubr_Cdnt_Cer_CMTS_Lookup() function but tweaked it very simple (1 change) a bit sloppy to find my card instead of the ubr.
+        Dim ntpFile As String
+        ntpFile = dirPath & "Node_To_Port_" & Format(Date.Now, "yyyy-MM-dd") & ".dat"
+
+        If Not (My.Computer.FileSystem.FileExists(ntpFile)) Then
+            My.Computer.FileSystem.CopyFile(NetDSS_NTP_file_link, ntpFile, True)
+        End If
+
+        Dim ntp As New IO.StreamReader(ntpFile)
+        Dim linein As String
+        Dim Result As Integer
+
+        linein = ntp.ReadLine
+        Do Until linein Is Nothing
+            Result = InStr(linein, node)
+            If Result <> 0 Then
+                Dim n As Short
+                n = 1
+                For i As Short = 0 To 1                          'Looking for the nth ","
+                    n = InStr(n, linein, ",") + 1
+                Next
+
+                linein = Microsoft.VisualBasic.Right(linein, Len(linein) - InStr(n, linein, ","))   'Chop up the left of the string off
+                linein = Microsoft.VisualBasic.Left(linein, InStr(linein, ",") - 1)                     'Chop up the right of the string off
+                Exit Do
+            End If
+            linein = ntp.ReadLine()
+        Loop
+        ntp.Close()
+
+        Dim cardDelArray = Split(linein, " ")
+        'For Each i In cardDelArray
+        '   MsgBox(i)
+        ' Next
+
+        cardDelArray(0) = Microsoft.VisualBasic.Right(cardDelArray(0), Len(cardDelArray(0)) - 1)
+        UbrCardRange = cardDelArray(0) & "/" & cardDelArray(1) & "/" & cardDelArray(2) '& "/" & cardDelArray(3)
+
+        'MsgBox(cardDelArray(3))
+
+        If Result = 0 Then
+            UbrCardRange = "ERROR"
+        Else
+            If cardDelArray(3) = "U0" Or cardDelArray(3) = "U1" Or cardDelArray(3) = "U2" Or cardDelArray(3) = "U3" Then
+                UbrCardRange = "cable " & UbrCardRange & " upstream 0 3"
+            ElseIf cardDelArray(3) = "U4" Or cardDelArray(3) = "U5" Or cardDelArray(3) = "U6" Or cardDelArray(3) = "U7" Then
+                UbrCardRange = "cable " & UbrCardRange & " upstream 4 7"
+            Else
+                'UbrCardRange = "ERROR"
+            End If
+            'UbrCardRange = linein
+        End If
+
+        'cable #/#/# upstream # #
+    End Function 'NO LONGER USED
+End Class
